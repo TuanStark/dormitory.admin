@@ -1,8 +1,19 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 
+// Define types
+interface NavItem {
+  name: string;
+  path: string;
+  icon: string;
+}
+
+interface SidebarProps {
+  isOpen: boolean;
+}
+
 // Navigation links configuration
-const navItems = [
+const navItems: NavItem[] = [
   { name: 'Dashboard', path: '/', icon: 'home' },
   { name: 'Buildings', path: '/buildings', icon: 'building' },
   { name: 'Rooms', path: '/rooms', icon: 'door-open' },
@@ -13,9 +24,9 @@ const navItems = [
   { name: 'Settings', path: '/settings', icon: 'cog' },
 ];
 
-const Sidebar = ({ isOpen }) => {
+const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
   const location = useLocation();
-  const [activeItem, setActiveItem] = useState('');
+  const [activeItem, setActiveItem] = useState<string>('');
 
   // Set active item based on current route
   useEffect(() => {

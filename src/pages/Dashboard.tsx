@@ -1,5 +1,5 @@
-import DashboardOverview from '../components/dashboard/DashboardOverview';
-import RecentBookings from '../components/dashboard/RecentBookings';
+import DashboardOverview from '../components/dashboard/DashboardOverview.tsx';
+import RecentBookings from '../components/dashboard/RecentBookings.tsx';
 
 const Dashboard = () => {
   return (

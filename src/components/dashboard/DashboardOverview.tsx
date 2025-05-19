@@ -1,9 +1,9 @@
-import { buildings, rooms, roomBookings, reports } from '../../data/mockData';
-import { RoomStatus, BookingStatus, ReportStatus } from '../../data/mockData';
-import Card from '../ui/Card';
+import { buildings, rooms, roomBookings, reports } from '../../data/mockData.ts';
+import { RoomStatus, BookingStatus, ReportStatus } from '../../data/mockData.ts';
+import Card from '../ui/Card.tsx';
 
 // Stats cards for the dashboard
-const DashboardOverview = () => {
+const DashboardOverview: React.FC = () => {
   // Calculate summary statistics
   const totalBuildings = buildings.length;
   const totalRooms = rooms.length;
@@ -11,10 +11,8 @@ const DashboardOverview = () => {
   const occupiedRooms = rooms.filter(room => room.status === RoomStatus.OCCUPIED).length;
   const maintenanceRooms = rooms.filter(room => room.status === RoomStatus.MAINTENANCE).length;
   
-  const totalBookings = roomBookings.length;
+  // These variables are used in the UI
   const pendingBookings = roomBookings.filter(booking => booking.status === BookingStatus.PENDING).length;
-  
-  const totalReports = reports.length;
   const unresolvedReports = reports.filter(report => report.status === ReportStatus.UNRESOLVED).length;
   
   // Calculate occupancy rate
@@ -22,8 +20,13 @@ const DashboardOverview = () => {
 
   // Get current date
   const today = new Date();
-  const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-  const formattedDate = today.toLocaleDateString('en-US', options);
+  const dateOptions: Intl.DateTimeFormatOptions = { 
+    weekday: 'long', 
+    year: 'numeric', 
+    month: 'long', 
+    day: 'numeric' 
+  };
+  const formattedDate = today.toLocaleDateString('en-US', dateOptions);
 
   return (
     <div className="space-y-6">

@@ -1,11 +1,27 @@
-import { useState } from 'react';
-import { buildings } from '../data/mockData';
+import { useEffect, useState } from 'react';
+import { Building, buildings } from '../data/mockData';
 import { Link } from 'react-router-dom';
 import Button from '../components/ui/Button';
 
 const Buildings = () => {
   const [searchTerm, setSearchTerm] = useState('');
-  
+  // [buildings, setBuildings] = useState<Building[]>([]);
+  //console.log(process.env.REACT_APP_API_URL);
+
+  // useEffect(() => {
+  //   const fetchBuildings = async () => {
+  //     try {
+  //       const response = await fetch(`${process.env.REACT_APP_API_URL}/building`);
+  //       const data = await response.json();
+  //       setBuildings(data);
+  //     } catch (error) {
+  //       console.error('Error fetching buildings:', error);
+  //     }
+  //   };
+  //   fetchBuildings();
+  // }, [buildings]);
+  // console.log(buildings);
+
   // Filter buildings based on search term
   const filteredBuildings = buildings.filter(building => 
     building.name.toLowerCase().includes(searchTerm.toLowerCase()) ||

@@ -1,3 +1,5 @@
+import React, { ButtonHTMLAttributes } from 'react';
+
 // Button variants
 export const BUTTON_VARIANTS = {
   PRIMARY: 'primary',
@@ -8,7 +10,9 @@ export const BUTTON_VARIANTS = {
   INFO: 'info',
   OUTLINE: 'outline',
   GHOST: 'ghost',
-};
+} as const;
+
+export type ButtonVariant = typeof BUTTON_VARIANTS[keyof typeof BUTTON_VARIANTS];
 
 // Button sizes
 export const BUTTON_SIZES = {
@@ -16,9 +20,20 @@ export const BUTTON_SIZES = {
   MD: 'md',
   LG: 'lg',
   XL: 'xl',
-};
+} as const;
 
-const Button = ({
+export type ButtonSize = typeof BUTTON_SIZES[keyof typeof BUTTON_SIZES];
+
+export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+  variant?: ButtonVariant;
+  size?: ButtonSize;
+  icon?: string | null;
+  iconPosition?: 'left' | 'right';
+  loading?: boolean;
+  className?: string;
+}
+
+const Button: React.FC<ButtonProps> = ({
   variant = BUTTON_VARIANTS.PRIMARY,
   size = BUTTON_SIZES.MD,
   type = 'button',
@@ -35,7 +50,7 @@ const Button = ({
   const baseClasses = 'inline-flex items-center justify-center font-medium rounded focus:outline-none transition-colors';
   
   // Variant classes
-  const getVariantClasses = () => {
+  const getVariantClasses = (): string => {
     switch (variant) {
       case BUTTON_VARIANTS.PRIMARY:
         return 'bg-primary-600 hover:bg-primary-700 text-white';
@@ -59,7 +74,7 @@ const Button = ({
   };
   
   // Size classes
-  const getSizeClasses = () => {
+  const getSizeClasses = (): string => {
     switch (size) {
       case BUTTON_SIZES.SM:
         return 'px-2 py-1 text-xs';
@@ -75,7 +90,7 @@ const Button = ({
   };
   
   // State classes
-  const getStateClasses = () => {
+  const getStateClasses = (): string => {
     if (disabled || loading) {
       return 'opacity-50 cursor-not-allowed';
     }

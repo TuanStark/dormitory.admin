@@ -1,14 +1,14 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { rooms, buildings, RoomStatus, Gender } from '../data/mockData';
-import Button from '../components/ui/Button';
-import Badge from '../components/ui/Badge';
+import { rooms, buildings, RoomStatus, Gender, RoomStatusType, GenderType } from '../data/mockData';
+import Button from '../components/ui/Button.tsx';
+import Badge from '../components/ui/Badge.tsx';
 
-const Rooms = () => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
-  const [genderFilter, setGenderFilter] = useState('');
-  const [buildingFilter, setBuildingFilter] = useState('');
+const Rooms: React.FC = () => {
+  const [searchTerm, setSearchTerm] = useState<string>('');
+  const [statusFilter, setStatusFilter] = useState<string>('');
+  const [genderFilter, setGenderFilter] = useState<string>('');
+  const [buildingFilter, setBuildingFilter] = useState<string>('');
   
   // Filter rooms based on search term and filters
   const filteredRooms = rooms.filter(room => {
@@ -30,7 +30,7 @@ const Rooms = () => {
   });
 
   // Get room status badge variant
-  const getRoomStatusBadgeVariant = (status) => {
+  const getRoomStatusBadgeVariant = (status: RoomStatusType): string => {
     switch (status) {
       case RoomStatus.AVAILABLE:
         return 'success';
@@ -46,7 +46,7 @@ const Rooms = () => {
   };
 
   // Get gender badge variant
-  const getGenderBadgeVariant = (gender) => {
+  const getGenderBadgeVariant = (gender: GenderType): string => {
     switch (gender) {
       case Gender.MALE:
         return 'info';

@@ -1,18 +1,26 @@
-import { users, RoleTypes } from '../data/mockData';
+import { users } from '../data/mockData.ts';
+import { User } from '../data/mockData.ts';
+
+// Define types
+export interface AuthResponse {
+  success: boolean;
+  user?: User;
+  message?: string;
+}
 
 // Simulated authentication functions for demo purposes
 // In a real application, this would use a proper auth service
 
 // Check if user is logged in
-export const isAuthenticated = () => {
+export const isAuthenticated = (): boolean => {
   return localStorage.getItem('isAuthenticated') === 'true';
 };
 
 // Login function
-export const login = (email, password) => {
+export const login = (email: string, password: string): AuthResponse => {
   // Find user with matching credentials
   const user = users.find(
-    (user) => user.email === email && user.password === password
+    (user: User) => user.email === email && user.password === password
   );
 
   if (user) {
@@ -23,7 +31,7 @@ export const login = (email, password) => {
       id: user.id,
       fullName: user.fullName,
       email: user.email,
-      role: users.find(u => u.id === user.id)?.roleId,
+      role: users.find((u: User) => u.id === user.id)?.roleId,
       status: user.status
     }));
     
@@ -34,19 +42,20 @@ export const login = (email, password) => {
 };
 
 // Logout function
-export const logout = () => {
+export const logout = (): void => {
   localStorage.removeItem('isAuthenticated');
   localStorage.removeItem('currentUser');
 };
 
 // Get current user
-export const getCurrentUser = () => {
+export const getCurrentUser = (): User | null => {
   if (!isAuthenticated()) {
     return null;
   }
   
   try {
-    return JSON.parse(localStorage.getItem('currentUser'));
+    const userData = localStorage.getItem('currentUser');
+    return userData ? JSON.parse(userData) : null;
   } catch (e) {
     logout();
     return null;
@@ -54,23 +63,23 @@ export const getCurrentUser = () => {
 };
 
 // Check if user has specific role
-export const hasRole = (role) => {
+export const hasRole = (role: number): boolean => {
   const currentUser = getCurrentUser();
   if (!currentUser) return false;
   
-  const userRole = users.find(u => u.id === currentUser.id)?.roleId;
+  const userRole = users.find((u: User) => u.id === currentUser.id)?.roleId;
   const matchedRole = userRole === role;
   
   return matchedRole;
 };
 
 // Check if user is admin
-export const isAdmin = () => {
+export const isAdmin = (): boolean => {
   return hasRole(1); // Admin role ID is 1
 };
 
 // Check if user has permission for specific action
-export const hasPermission = (permission) => {
+export const hasPermission = (permission: string): boolean => {
   const currentUser = getCurrentUser();
   if (!currentUser) return false;
   
@@ -79,7 +88,7 @@ export const hasPermission = (permission) => {
   
   // Add more granular permissions as needed
   // For now, simplified version where managers have specific permissions
-  const userRole = users.find(u => u.id === currentUser.id)?.roleId;
+  const userRole = users.find((u: User) => u.id === currentUser.id)?.roleId;
   
   if (userRole === 2) { // Manager role ID is 2
     const managerPermissions = [

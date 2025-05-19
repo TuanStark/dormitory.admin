@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
-import Header from './Header';
+import Header from './Header.tsx';
 
-const MainLayout = () => {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+const MainLayout: React.FC = () => {
+  const [sidebarOpen, setSidebarOpen] = useState<boolean>(true);
 
-  const toggleSidebar = () => {
+  const toggleSidebar = (): void => {
     setSidebarOpen(!sidebarOpen);
   };
 

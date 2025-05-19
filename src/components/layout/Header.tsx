@@ -2,10 +2,19 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { getCurrentUser, logout } from '../../utils/auth';
 
-const Header = ({ toggleSidebar }) => {
-  const [showProfileMenu, setShowProfileMenu] = useState(false);
-  const [showNotifications, setShowNotifications] = useState(false);
-  const [currentUser, setCurrentUser] = useState(null);
+interface HeaderProps {
+  toggleSidebar: () => void;
+}
+
+interface User {
+  fullName?: string;
+  email?: string;
+}
+
+const Header: React.FC<HeaderProps> = ({ toggleSidebar }) => {
+  const [showProfileMenu, setShowProfileMenu] = useState<boolean>(false);
+  const [showNotifications, setShowNotifications] = useState<boolean>(false);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
   
   const navigate = useNavigate();
   const location = useLocation();
@@ -16,13 +25,13 @@ const Header = ({ toggleSidebar }) => {
     setCurrentUser(user);
   }, []);
 
-  const handleLogout = () => {
+  const handleLogout = (): void => {
     logout();
     navigate('/login');
   };
 
   // Get user initials for the avatar
-  const getInitials = () => {
+  const getInitials = (): string => {
     if (!currentUser?.fullName) return 'U';
     
     const names = currentUser.fullName.split(' ');
@@ -32,7 +41,7 @@ const Header = ({ toggleSidebar }) => {
   };
 
   // Get page title from route
-  const getPageTitle = () => {
+  const getPageTitle = (): string => {
     const path = location.pathname;
     
     if (path === '/') return 'Dashboard';
