@@ -15,6 +15,7 @@ export interface Amenity {
   roomId?: number;
   createAt?: string;
   updateAt?: string;
+  name?: string;
 }
 
 export interface Room {
