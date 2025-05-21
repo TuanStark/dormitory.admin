@@ -35,7 +35,7 @@ export function usePagination({
   totalItems,
   initialPage = 1,
   itemsPerPage = 10,
-  maxPageNumbers = 5,
+  maxPageNumbers = 9,
 }: PaginationOptions): PaginationResult {
   const [currentPage, setCurrentPage] = useState(initialPage);
   
@@ -87,7 +87,7 @@ export function usePagination({
     setCurrentPage(totalPages);
   };
   
-  // Generate page numbers for pagination UI
+  // Generate page numbers for pagination UI with improved logic
   const pageNumbers = useMemo(() => {
     const pageArr: number[] = [];
     
@@ -97,34 +97,61 @@ export function usePagination({
         pageArr.push(i);
       }
     } else {
-      // Calculate range of page numbers to show
-      const halfMax = Math.floor(maxPageNumbers / 2);
-      let startPage = Math.max(1, currentPage - halfMax);
-      let endPage = Math.min(totalPages, startPage + maxPageNumbers - 1);
+      // Cải thiện logic hiển thị trang
+      // Hiển thị nhiều trang hơn xung quanh trang hiện tại
+      // Đảm bảo hiển thị ít nhất 4 trang sau trang hiện tại nếu có thể
       
-      // Adjust if at the end
-      if (endPage - startPage + 1 < maxPageNumbers) {
-        startPage = Math.max(1, endPage - maxPageNumbers + 1);
+      // Tính toán số trang hiển thị bên trái và phải trang hiện tại
+      const siblingsCount = Math.floor((maxPageNumbers - 3) / 2); 
+      
+      // Tính toán trang bắt đầu và kết thúc
+      let startPage = Math.max(2, currentPage - Math.floor(siblingsCount / 2));
+      let endPage = Math.min(totalPages - 1, currentPage + siblingsCount);
+      
+      // Đảm bảo hiển thị nhiều trang phía sau trang hiện tại
+      // Nếu người dùng đang ở gần đầu danh sách
+      if (currentPage < 5) {
+        endPage = Math.min(totalPages - 1, 7); // Hiển thị đến trang 7 nếu có thể
+        startPage = 2; // Bắt đầu từ trang 2
       }
       
-      // Always show first page
-      if (startPage > 1) {
-        pageArr.push(1);
-        if (startPage > 2) {
-          pageArr.push(-1); // -1 represents ellipsis
+      // Nếu người dùng đang ở gần cuối danh sách
+      if (currentPage > totalPages - 5) {
+        startPage = Math.max(2, totalPages - 6); // Hiển thị từ totalPages-6
+        endPage = totalPages - 1;
+      }
+      
+      // Điều chỉnh để luôn hiển thị đủ số trang theo maxPageNumbers
+      if (endPage - startPage + 3 < maxPageNumbers) { // +3 cho trang đầu, cuối và trang hiện tại
+        if (startPage === 2) {
+          // Nếu đã ở gần đầu, mở rộng về phía cuối
+          endPage = Math.min(totalPages - 1, startPage + maxPageNumbers - 3);
+        } else if (endPage === totalPages - 1) {
+          // Nếu đã ở gần cuối, mở rộng về phía đầu
+          startPage = Math.max(2, endPage - (maxPageNumbers - 3));
         }
       }
       
-      // Add middle pages
+      // Luôn hiển thị trang đầu tiên
+      pageArr.push(1);
+      
+      // Thêm dấu ... nếu cần
+      if (startPage > 2) {
+        pageArr.push(-1); // -1 đại diện cho dấu ...
+      }
+      
+      // Thêm các trang giữa
       for (let i = startPage; i <= endPage; i++) {
         pageArr.push(i);
       }
       
-      // Always show last page
+      // Thêm dấu ... nếu cần
+      if (endPage < totalPages - 1) {
+        pageArr.push(-1); // -1 đại diện cho dấu ...
+      }
+      
+      // Luôn hiển thị trang cuối cùng
       if (endPage < totalPages) {
-        if (endPage < totalPages - 1) {
-          pageArr.push(-1); // -1 represents ellipsis
-        }
         pageArr.push(totalPages);
       }
     }

@@ -40,10 +40,10 @@ const DashboardOverview: React.FC = () => {
             <i className="fas fa-download mr-2"></i>
             Export Report
           </button>
-          <button className="btn btn-primary text-sm">
+          {/* <button className="btn btn-primary text-sm">
             <i className="fas fa-plus mr-2"></i>
             New Booking
-          </button>
+          </button> */}
         </div>
       </div>
       

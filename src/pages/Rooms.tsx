@@ -1,21 +1,68 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { rooms, buildings, RoomStatus, Gender, RoomStatusType, GenderType } from '../data/mockData';
+import { RoomStatus, Gender, RoomStatusType, GenderType } from '../data/mockData';
 import Button from '../components/ui/Button.tsx';
 import Badge from '../components/ui/Badge.tsx';
+import { Room } from '../types.ts';
+import fetchRooms from '../utils/api/room.ts';
+import Pagination from '../components/ui/Pagination.tsx';
+
+// Debounce function
+const useDebounce = <T,>(value: T, delay: number): T => {
+  const [debouncedValue, setDebouncedValue] = useState<T>(value);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [value, delay]);
+
+  return debouncedValue;
+};
 
 const Rooms: React.FC = () => {
+  const [rooms, setRooms] = useState<Room[]>([]);
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [genderFilter, setGenderFilter] = useState<string>('');
   const [buildingFilter, setBuildingFilter] = useState<string>('');
+  const [sortBy, setSortBy] = useState('id');
+  const [filterStatus, setFilterStatus] = useState('');
+  const [filterGender, setFilterGender] = useState('');
+  const [limit, setLimit] = useState(10);
+  const [totalItems, setTotalItems] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(5);
+  const debouncedSearchTerm = useDebounce(searchTerm, 500);
+
+  const goToPage = (page: number) => {
+    setCurrentPage(page);
+    loadRooms(page);
+  };
+
+  const loadRooms = async (page = 1) => {
+    const response = await fetchRooms(page, itemsPerPage, debouncedSearchTerm, sortBy, filterStatus, filterGender);
+    console.log(response);
+    setRooms(response.data);
+    setTotalItems(response.total);
+    setCurrentPage(response.pageNumber);
+    setItemsPerPage(response.limitNumber);
+  };
+  useEffect(() => {
+    
+    loadRooms();
+  }, [debouncedSearchTerm, sortBy, filterStatus, filterGender]);
   
   // Filter rooms based on search term and filters
   const filteredRooms = rooms.filter(room => {
     // Search filter
     const matchesSearch = 
       room.roomNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      room.description.toLowerCase().includes(searchTerm.toLowerCase());
+      room.description?.toLowerCase().includes(searchTerm.toLowerCase());
     
     // Status filter
     const matchesStatus = statusFilter === '' || room.status === statusFilter;
@@ -29,45 +76,15 @@ const Rooms: React.FC = () => {
     return matchesSearch && matchesStatus && matchesGender && matchesBuilding;
   });
 
-  // Get room status badge variant
-  const getRoomStatusBadgeVariant = (status: RoomStatusType): string => {
-    switch (status) {
-      case RoomStatus.AVAILABLE:
-        return 'success';
-      case RoomStatus.OCCUPIED:
-        return 'info';
-      case RoomStatus.MAINTENANCE:
-        return 'warning';
-      case RoomStatus.RESERVED:
-        return 'secondary';
-      default:
-        return 'secondary';
-    }
-  };
-
-  // Get gender badge variant
-  const getGenderBadgeVariant = (gender: GenderType): string => {
-    switch (gender) {
-      case Gender.MALE:
-        return 'info';
-      case Gender.FEMALE:
-        return 'danger';
-      case Gender.ANY:
-        return 'success';
-      default:
-        return 'secondary';
-    }
-  };
-
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-gray-900">Rooms</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Phòng</h1>
         <Button 
           variant="primary"
           icon="fas fa-plus"
         >
-          Add Room
+          Thêm phòng
         </Button>
       </div>
       
@@ -77,7 +94,7 @@ const Rooms: React.FC = () => {
           <div className="relative">
             <input
               type="text"
-              placeholder="Search rooms..."
+              placeholder="Tìm kiếm phòng..."
               className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -92,11 +109,11 @@ const Rooms: React.FC = () => {
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
           >
-            <option value="">All Statuses</option>
-            <option value={RoomStatus.AVAILABLE}>Available</option>
-            <option value={RoomStatus.OCCUPIED}>Occupied</option>
-            <option value={RoomStatus.MAINTENANCE}>Maintenance</option>
-            <option value={RoomStatus.RESERVED}>Reserved</option>
+            <option value="">Tất cả trạng thái</option>
+            <option value={RoomStatus.AVAILABLE}>Còn trống</option>
+            <option value={RoomStatus.OCCUPIED}>Đã thuê</option>
+            <option value={RoomStatus.MAINTENANCE}>Bảo trì</option>
+            <option value={RoomStatus.RESERVED}>Đã đặt</option>
           </select>
           
           <select 
@@ -104,24 +121,26 @@ const Rooms: React.FC = () => {
             value={genderFilter}
             onChange={(e) => setGenderFilter(e.target.value)}
           >
-            <option value="">All Genders</option>
-            <option value={Gender.MALE}>Male</option>
-            <option value={Gender.FEMALE}>Female</option>
-            <option value={Gender.ANY}>Any</option>
+            <option value="">Tất cả giới tính</option>
+            <option value={Gender.MALE}>Nam</option>
+            <option value={Gender.FEMALE}>Nữ</option>
+            <option value={Gender.ANY}>Tất cả</option>
           </select>
           
-          <select 
+          {/* <select 
             className="px-4 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
             value={buildingFilter}
             onChange={(e) => setBuildingFilter(e.target.value)}
           >
-            <option value="">All Buildings</option>
-            {buildings.map(building => (
-              <option key={building.id} value={building.id}>
-                {building.name}
+            <option value="">Tất cả tòa nhà</option>
+            {rooms.map(room => (
+              <option key={room.buildingId} value={room.buildingId}>
+                Tòa nhà {room.buildingId}
               </option>
-            ))}
-          </select>
+            )).filter((item, index, self) => 
+              index === self.findIndex((t) => t.key === item.key)
+            )}
+          </select> */}
         </div>
       </div>
       
@@ -131,46 +150,49 @@ const Rooms: React.FC = () => {
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Room</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Building</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Floor</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Capacity</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Gender</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phòng</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tòa nhà</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tầng</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sức chứa</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Giới tính</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Giá</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trạng thái</th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Thao tác</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {filteredRooms.map(room => {
-                const building = buildings.find(b => b.id === room.buildingId);
-                
                 return (
                   <tr key={room.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4">
-                      <div className="text-sm font-medium text-gray-900">Room {room.roomNumber}</div>
+                      <div className="text-sm font-medium text-gray-900">Phòng {room.roomNumber}</div>
                       <div className="text-xs text-gray-500 truncate max-w-xs">{room.description}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {building?.name}
+                      Tòa nhà {room.buildingId}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {room.floor}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {room.capacity} {room.capacity > 1 ? 'persons' : 'person'}
+                      {room.capacity} {room.capacity > 1 ? 'người' : 'người'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <Badge variant={getGenderBadgeVariant(room.gender)}>
-                        {room.gender}
+                      <Badge variant="info">
+                        {room.gender === Gender.MALE ? 'Nam' : 
+                         room.gender === Gender.FEMALE ? 'Nữ' : 'Tất cả'}
                       </Badge>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      ${room.price}/month
+                      {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(parseInt(room.price))}/tháng
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <Badge variant={getRoomStatusBadgeVariant(room.status)}>
-                        {room.status}
+                      <Badge variant={room.status === RoomStatus.AVAILABLE ? 'success' : 
+                                       room.status === RoomStatus.OCCUPIED ? 'info' :
+                                       room.status === RoomStatus.MAINTENANCE ? 'warning' : 'secondary'}>
+                        {room.status === RoomStatus.AVAILABLE ? 'Còn trống' : 
+                         room.status === RoomStatus.OCCUPIED ? 'Đã thuê' :
+                         room.status === RoomStatus.MAINTENANCE ? 'Bảo trì' : 'Đã đặt'}
                       </Badge>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
@@ -195,25 +217,23 @@ const Rooms: React.FC = () => {
       {filteredRooms.length === 0 && (
         <div className="text-center py-12 bg-gray-50 rounded-lg">
           <i className="fas fa-door-open text-gray-300 text-5xl"></i>
-          <p className="mt-4 text-gray-500 text-lg">No rooms found</p>
-          <p className="text-gray-400">Try adjusting your filters</p>
+          <p className="mt-4 text-gray-500 text-lg">Không tìm thấy phòng nào</p>
+          <p className="text-gray-400">Hãy thử điều chỉnh bộ lọc của bạn</p>
         </div>
       )}
       
       {/* Pagination */}
       <div className="flex justify-between items-center">
         <div className="text-sm text-gray-500">
-          Showing <span className="font-medium">{filteredRooms.length}</span> of <span className="font-medium">{rooms.length}</span> rooms
+          Hiển thị <span className="font-medium">{filteredRooms.length}</span> trong số <span className="font-medium">{totalItems}</span> phòng
         </div>
         
-        <div className="flex space-x-2">
-          <button className="px-3 py-1 border border-gray-300 rounded-md text-sm text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
-            Previous
-          </button>
-          <button className="px-3 py-1 border border-gray-300 rounded-md text-sm text-gray-500 hover:bg-gray-50">
-            Next
-          </button>
-        </div>
+        <Pagination 
+          totalItems={totalItems}
+          currentPage={currentPage}
+          onPageChange={goToPage}
+          itemsPerPage={itemsPerPage}
+        />
       </div>
     </div>
   );

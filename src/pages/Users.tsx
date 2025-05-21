@@ -1,12 +1,8 @@
 import { useEffect, useState } from 'react';
-//import { roles, universities, User } from '../data/mockData';
-import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
 import { User } from '../types';
-import { useServerPagination } from '../hooks/useServerPagination';
 import fetchUsers from '../utils/api/user';
-import { roles, universities } from '../data/mockData';
-import Modal from '../components/ui/Modal';
+import { universities } from '../data/mockData';
 import Pagination from '../components/ui/Pagination';
 import UserViewModal from '../components/users/UserViewModal';
 import UserEditModal from '../components/users/UserEditModal';
@@ -58,7 +54,7 @@ const Users = () => {
   const fetchUsersData = async (page = 1) => {
     try {
       const response = await fetchUsers(page, itemsPerPage, debouncedSearchTerm, sortBy, filterByCapacity);
-      console.log(response);
+      //console.log(response);
       setUserData(response.data);
       setTotalItems(response.total);
       setCurrentPage(response.pageNumber);
@@ -246,7 +242,7 @@ const Users = () => {
         </div>
       )}
 
-      <div className="flex justify-between items-center">
+      {/* <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-gray-900">Người dùng</h1>
         <Button 
           variant="primary"
@@ -254,7 +250,7 @@ const Users = () => {
         >
           Thêm người dùng
         </Button>
-      </div>
+      </div> */}
       
       {/* Search and filters */}
       <Card>
