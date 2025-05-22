@@ -1,10 +1,21 @@
-import { useState } from 'react';
-import { roomBookings, users, rooms, buildings, BookingStatus } from '../data/mockData';
+import { useState, useEffect } from 'react';
+import { BookingStatus } from '../data/mockData';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
 import Badge from '../components/ui/Badge';
+import { Booking, User, Room, Building } from '../types';
+import fetchBookings from '../utils/api/booking';
+import fetchUsers from '../utils/api/user';
+import fetchRooms from '../utils/api/room';
+import api from '../utils/createApiClient';
+import Pagination from '../components/ui/Pagination';
+import { toast } from 'react-toastify';
 
 const Bookings = () => {
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
+  const [rooms, setRooms] = useState<Room[]>([]);
+  const [buildings, setBuildings] = useState<Building[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [dateRange, setDateRange] = useState({
@@ -12,40 +23,86 @@ const Bookings = () => {
     endDate: ''
   });
   const [buildingFilter, setBuildingFilter] = useState('');
-  
-  // Filter bookings based on search term and filters
-  const filteredBookings = roomBookings.filter(booking => {
-    // Get the associated user and room for this booking
-    const user = users.find(u => u.id === booking.userId);
-    const room = rooms.find(r => r.id === booking.roomId);
-    const building = room ? buildings.find(b => b.id === room.buildingId) : null;
-    
-    // Search filter
-    const matchesSearch = (
-      (user && user.fullName.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (user && user.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (room && room.roomNumber.toString().includes(searchTerm.toLowerCase())) ||
-      (building && building.name.toLowerCase().includes(searchTerm.toLowerCase()))
-    );
-    
-    // Status filter
-    const matchesStatus = statusFilter === '' || booking.status === statusFilter;
-    
-    // Building filter
-    const matchesBuilding = buildingFilter === '' || 
-      (room && building && building.id.toString() === buildingFilter);
-    
-    // Date range filter
-    const bookingDate = new Date(booking.bookingDate);
-    const startDateMatch = !dateRange.startDate || bookingDate >= new Date(dateRange.startDate);
-    const endDateMatch = !dateRange.endDate || bookingDate <= new Date(dateRange.endDate);
-    const matchesDateRange = startDateMatch && endDateMatch;
-    
-    return matchesSearch && matchesStatus && matchesBuilding && matchesDateRange;
-  });
+  const [totalItems, setTotalItems] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(5);
+  const [loading, setLoading] = useState(false);
+
+  const goToPage = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  // Fetch bookings data
+  const fetchBookingsData = async () => {
+    setLoading(true);
+    try {
+      const response = await fetchBookings(currentPage, itemsPerPage, searchTerm, statusFilter, buildingFilter);
+      setBookings(response.data);
+      setTotalItems(response.total);
+      setCurrentPage(response.pageNumber);
+      setItemsPerPage(response.limitNumber);
+    } catch (error) {
+      console.error('Error fetching bookings:', error);
+      toast.error('Không thể tải dữ liệu đặt phòng');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch users data
+  const fetchUsersData = async () => {
+    try {
+      const response = await fetchUsers(1, 100); // Lấy tối đa 100 users
+      setUsers(response.data);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+    }
+  };
+
+  // Fetch rooms data
+  const fetchRoomsData = async () => {
+    try {
+      const response = await fetchRooms(1, 100); // Lấy tối đa 100 phòng
+      setRooms(response.data);
+    } catch (error) {
+      console.error('Error fetching rooms:', error);
+    }
+  };
+
+  // Fetch buildings data
+  const fetchBuildingsData = async () => {
+    try {
+      const response = await api.get<any>('/building');
+      if (response.data && Array.isArray(response.data.data)) {
+        setBuildings(response.data.data);
+      } else if (Array.isArray(response.data)) {
+        setBuildings(response.data);
+      }
+    } catch (error) {
+      console.error('Error fetching buildings:', error);
+    }
+  };
+
+  // Load all necessary data
+  useEffect(() => {
+    fetchUsersData();
+    fetchRoomsData();
+    fetchBuildingsData();
+  }, []);
+
+  // Fetch bookings when filters change
+  useEffect(() => {
+    fetchBookingsData();
+  }, [currentPage, itemsPerPage, searchTerm, statusFilter, buildingFilter]);
+
+  // Handle search and filter
+  const handleSearch = () => {
+    setCurrentPage(1);
+    fetchBookingsData();
+  };
 
   // Function to get status badge variant
-  const getStatusBadgeVariant = (status) => {
+  const getStatusBadgeVariant = (status: string) => {
     switch (status) {
       case BookingStatus.APPROVED:
         return 'success';
@@ -63,7 +120,8 @@ const Bookings = () => {
   };
 
   // Function to format date
-  const formatDate = (dateString) => {
+  const formatDate = (dateString: string) => {
+    if (!dateString) return 'N/A';
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', {
       year: 'numeric',
@@ -72,16 +130,15 @@ const Bookings = () => {
     });
   };
 
+  // Find user, room and building for a booking
+  const getUserById = (userId: number) => users.find(u => u.id === userId);
+  const getRoomById = (roomId: number) => rooms.find(r => r.id === roomId);
+  const getBuildingById = (buildingId: number) => buildings.find(b => b.id === buildingId);
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-gray-900">Bookings</h1>
-        <Button 
-          variant="primary"
-          icon="fas fa-plus"
-        >
-          Add Booking
-        </Button>
       </div>
       
       {/* Search and filters */}
@@ -94,6 +151,7 @@ const Bookings = () => {
               className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
             />
             <div className="absolute inset-y-0 right-0 flex items-center pr-3">
               <i className="fas fa-search text-gray-400"></i>
@@ -103,7 +161,11 @@ const Bookings = () => {
           <select 
             className="px-4 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
             value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
+            onChange={(e) => {
+              setStatusFilter(e.target.value);
+              setCurrentPage(1);
+              setTimeout(fetchBookingsData, 0);
+            }}
           >
             <option value="">All Statuses</option>
             <option value={BookingStatus.APPROVED}>Approved</option>
@@ -116,7 +178,11 @@ const Bookings = () => {
           <select 
             className="px-4 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
             value={buildingFilter}
-            onChange={(e) => setBuildingFilter(e.target.value)}
+            onChange={(e) => {
+              setBuildingFilter(e.target.value);
+              setCurrentPage(1);
+              setTimeout(fetchBookingsData, 0);
+            }}
           >
             <option value="">All Buildings</option>
             {buildings.map(building => (
@@ -132,8 +198,9 @@ const Bookings = () => {
               size="sm"
               className="flex-1"
               icon="fas fa-calendar-alt"
+              onClick={handleSearch}
             >
-              Filter by Date
+              Apply Filters
             </Button>
           </div>
         </div>
@@ -141,104 +208,110 @@ const Bookings = () => {
       
       {/* Bookings Table */}
       <Card>
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Booking ID</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Student</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Room</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Building</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Booking Date</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Check-in</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Check-out</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {filteredBookings.map((booking) => {
-                const user = users.find(u => u.id === booking.userId);
-                const room = rooms.find(r => r.id === booking.roomId);
-                const building = room ? buildings.find(b => b.id === room.buildingId) : null;
-                
-                return (
-                  <tr key={booking.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      #{booking.id}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div className="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 font-medium">
-                          {user && user.fullName.charAt(0)}
-                        </div>
-                        <div className="ml-3">
-                          <div className="text-sm font-medium text-gray-900">{user && user.fullName}</div>
-                          <div className="text-xs text-gray-500">{user && user.email}</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {room ? `Room ${room.roomNumber}` : 'N/A'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {building ? building.name : 'N/A'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {formatDate(booking.bookingDate)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {formatDate(booking.checkInDate)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {formatDate(booking.checkOutDate)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <Badge variant={getStatusBadgeVariant(booking.status)}>
-                        {booking.status}
-                      </Badge>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <button className="text-primary-600 hover:text-primary-900 mr-3">
-                        <i className="fas fa-eye"></i>
-                      </button>
-                      <button className="text-gray-500 hover:text-gray-700 mr-3">
-                        <i className="fas fa-edit"></i>
-                      </button>
-                      <button className="text-red-500 hover:text-red-700">
-                        <i className="fas fa-trash-alt"></i>
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-        
-        {filteredBookings.length === 0 && (
-          <div className="text-center py-12 bg-gray-50 rounded-lg">
-            <i className="fas fa-calendar-alt text-gray-300 text-5xl"></i>
-            <p className="mt-4 text-gray-500 text-lg">No bookings found</p>
-            <p className="text-gray-400">Try adjusting your filters</p>
+        {loading ? (
+          <div className="flex justify-center items-center py-20">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-600"></div>
           </div>
+        ) : (
+          <>
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Booking ID</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Student</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Room</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Building</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Booking Date</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Check-in</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Duration</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {bookings.map((booking) => {
+                    const user = getUserById(booking.userId);
+                    const room = getRoomById(booking.roomId);
+                    const building = room ? getBuildingById(room.buildingId) : null;
+                    
+                    return (
+                      <tr key={booking.id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          #{booking.id}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center">
+                            <div className="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 font-medium">
+                              {user ? user.fullName.charAt(0) : '?'}
+                            </div>
+                            <div className="ml-3">
+                              <div className="text-sm font-medium text-gray-900">{user ? user.fullName : 'Unknown User'}</div>
+                              <div className="text-xs text-gray-500">{user ? user.email : 'N/A'}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {room ? `Room ${room.roomNumber}` : 'N/A'}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {building ? building.name : 'N/A'}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {formatDate(booking.bookingDate)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {formatDate(booking.checkInDate)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {booking.stayDuration ? `${booking.stayDuration} ngày` : 'N/A'}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <Badge variant={getStatusBadgeVariant(booking.status)}>
+                            {booking.status}
+                          </Badge>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                          <button className="text-primary-600 hover:text-primary-900 mr-3">
+                            <i className="fas fa-eye"></i>
+                          </button>
+                          <button className="text-gray-500 hover:text-gray-700 mr-3">
+                            <i className="fas fa-edit"></i>
+                          </button>
+                          <button className="text-red-500 hover:text-red-700">
+                            <i className="fas fa-trash-alt"></i>
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+            
+            {bookings.length === 0 && !loading && (
+              <div className="text-center py-12 bg-gray-50 rounded-lg">
+                <i className="fas fa-calendar-alt text-gray-300 text-5xl"></i>
+                <p className="mt-4 text-gray-500 text-lg">No bookings found</p>
+                <p className="text-gray-400">Try adjusting your filters</p>
+              </div>
+            )}
+          </>
         )}
       </Card>
       
       {/* Pagination */}
       <div className="flex justify-between items-center">
         <div className="text-sm text-gray-500">
-          Showing <span className="font-medium">{filteredBookings.length}</span> of <span className="font-medium">{roomBookings.length}</span> bookings
+          Showing <span className="font-medium">{bookings.length}</span> of <span className="font-medium">{totalItems}</span> bookings
         </div>
         
-        <div className="flex space-x-2">
-          <button className="px-3 py-1 border border-gray-300 rounded-md text-sm text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
-            Previous
-          </button>
-          <button className="px-3 py-1 border border-gray-300 rounded-md text-sm text-gray-500 hover:bg-gray-50">
-            Next
-          </button>
-        </div>
+        <Pagination 
+          totalItems={totalItems}
+          currentPage={currentPage}
+          onPageChange={goToPage}
+          itemsPerPage={itemsPerPage}
+        />
       </div>
     </div>
   );

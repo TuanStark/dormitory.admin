@@ -1,15 +1,15 @@
-import { Room } from '../../types';
+import { Booking } from '../../types';
 
-// Mock API function to simulate fetching buildings from server
-export default async function fetchRooms(
+export default async function fetchBookings(
     page: number, 
     itemsPerPage: number, 
     searchTerm?: string,
     sortBy?: string,
     status?: string,
-    gender?: string
+    building?: string,
+    checkInDate?: string,
   ): Promise<{
-    data: Room[];
+    data: Booking[];
     total: number;
     limitNumber: number;
     pageNumber: number;
@@ -37,23 +37,28 @@ export default async function fetchRooms(
         queryParams.append('status', status);
       }
 
-      // Add gender filter if provided
-      if (gender) {
-        queryParams.append('gender', gender);
+      // Add building filter if provided
+      if (building) {
+        queryParams.append('building', building);
+      }
+
+      // Add checkInDate filter if provided
+      if (checkInDate) {
+        queryParams.append('checkInDate', checkInDate);
       }
       
       // Lấy token từ localStorage
       const token = localStorage.getItem('token');
       
       // Make the API call
-      const response = await fetch(`http://localhost:8000/room?${queryParams.toString()}`, {
+      const response = await fetch(`http://localhost:8000/room-booking/all?${queryParams.toString()}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
       
       // Log response status để debug
-      
+
       // Kiểm tra status code
       if (!response.ok) {
         throw new Error(`API error: ${response.status} ${response.statusText}`);
@@ -62,7 +67,7 @@ export default async function fetchRooms(
       const result = await response.json();
       
       // Xử lý nhiều cấu trúc dữ liệu khác nhau
-      let roomsData = [];
+      let bookingsData = [];
       let totalItems = 0;
       let limit = itemsPerPage;
       let currentPage = page;
@@ -71,7 +76,7 @@ export default async function fetchRooms(
       // Trường hợp 1: Cấu trúc chuẩn { statusCode, data: { data, meta } }
       if (result.statusCode === 200 && result.data) {
         if (result.data.data && Array.isArray(result.data.data)) {
-          roomsData = result.data.data;
+          bookingsData = result.data.data;
           
           if (result.data.meta) {
             totalItems = result.data.meta.total || 0;
@@ -83,7 +88,7 @@ export default async function fetchRooms(
       } 
       // Trường hợp 2: Cấu trúc { data, meta } trực tiếp
       else if (result.data && Array.isArray(result.data)) {
-        roomsData = result.data;
+        bookingsData = result.data;
         
         if (result.meta) {
           totalItems = result.meta.total || 0;
@@ -94,13 +99,12 @@ export default async function fetchRooms(
       }
       // Trường hợp 3: Mảng dữ liệu trực tiếp
       else if (Array.isArray(result)) {
-        roomsData = result;
+        bookingsData = result;
         totalItems = result.length;
         totalPages = 1;
       }
       // Trường hợp 4: Cấu trúc khác không mong đợi
       else {
-        console.error('Unexpected API response structure:', result);
         // Trả về dữ liệu trống thay vì throw error
         return {
           data: [],
@@ -112,14 +116,14 @@ export default async function fetchRooms(
       }
       
       return {
-        data: roomsData,
+        data: bookingsData,
         total: totalItems,
         limitNumber: limit,
         pageNumber: currentPage,
         totalPages: totalPages
       };
     } catch (error) {
-      console.error('Error fetching rooms:', error);
+      console.error('Error fetching bookings:', error);
       // Trả về dữ liệu trống thay vì throw error
       return {
         data: [],

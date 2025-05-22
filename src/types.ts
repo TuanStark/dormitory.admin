@@ -87,3 +87,16 @@ export interface Role {
   name: string;
   description: string;
 }
+
+export interface Booking {
+  id: number;
+  roomId: number;
+  userId: number;
+  bookingDate: string;
+  status: string;
+  checkInDate: string;
+  stayDuration: number;
+  totalPrice: number;
+  createdAt: string;
+  updatedAt: string;
+}
