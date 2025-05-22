@@ -1,22 +1,66 @@
 import { buildings, rooms, roomBookings, reports } from '../../data/mockData.ts';
 import { RoomStatus, BookingStatus, ReportStatus } from '../../data/mockData.ts';
 import Card from '../ui/Card.tsx';
-
+import { useEffect, useState } from 'react';
 // Stats cards for the dashboard
 const DashboardOverview: React.FC = () => {
+
+// totalAmount
+// : 
+// _sum
+// : 
+// {amount: null}
+// [[Prototype]]
+// : 
+// Object
+// totalAvailableRoom:74
+// totalBooking:2
+// totalBookingCompleted: 0
+// totalBuildings: 15
+// totalRooms : 75
+// totalUsers : 13
+
+  const [dashboardData, setDashboardData] = useState({
+    totalBuildings: 0,
+    totalRooms: 0,
+    totalAvailableRoom: 0,  
+    totalBooking: 0,
+    totalBookingCompleted: 0,
+    totalUsers: 0,
+    totalAmount: {
+      _sum: {
+        amount: null
+      }
+    }
+  });
   // Calculate summary statistics
-  const totalBuildings = buildings.length;
-  const totalRooms = rooms.length;
-  const availableRooms = rooms.filter(room => room.status === RoomStatus.AVAILABLE).length;
-  const occupiedRooms = rooms.filter(room => room.status === RoomStatus.OCCUPIED).length;
-  const maintenanceRooms = rooms.filter(room => room.status === RoomStatus.MAINTENANCE).length;
+  const totalBuildings = dashboardData.totalBuildings;
+  const totalRooms = dashboardData.totalRooms;
+  const availableRooms = dashboardData.totalAvailableRoom;
+  const occupiedRooms = dashboardData.totalBookingCompleted;
+  const totalBookings = dashboardData.totalBooking;
+  const totalUsers = dashboardData.totalUsers;
+  const totalAmount = dashboardData.totalAmount._sum.amount || 0;
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        const response = await fetch('http://localhost:8000/dashboard/stats');
+        const data = await response.json();
+        setDashboardData(data);
+      } catch (error) {
+        console.error('Error fetching dashboard data:', error);
+      }
+    };
+    fetchDashboardData();
+  }, []);
   
   // These variables are used in the UI
   const pendingBookings = roomBookings.filter(booking => booking.status === BookingStatus.PENDING).length;
   const unresolvedReports = reports.filter(report => report.status === ReportStatus.UNRESOLVED).length;
   
   // Calculate occupancy rate
-  const occupancyRate = Math.round((occupiedRooms / totalRooms) * 100);
+  const occupancyRate = totalRooms > 0 ? Math.round((occupiedRooms / totalRooms) * 100) : 0;
 
   // Get current date
   const today = new Date();
@@ -87,25 +131,24 @@ const DashboardOverview: React.FC = () => {
           <div className="mt-3 w-full bg-gray-100 rounded-full h-1.5">
             <div 
               className="bg-green-500 h-1.5 rounded-full" 
-              style={{ width: `${(availableRooms / totalRooms) * 100}%` }}
+              style={{ width: `${totalRooms > 0 ? (availableRooms / totalRooms) * 100 : 0}%` }}
             ></div>
           </div>
         </Card>
         
-        {/* Occupancy Rate Card */}
+        {/* Users Card */}
         <Card className="dashboard-card relative overflow-hidden border-none">
           <div className="absolute top-0 left-0 w-full h-1 bg-purple-500"></div>
           <div className="flex items-center">
             <div className="flex-shrink-0 h-12 w-12 rounded-lg bg-purple-100 flex items-center justify-center">
-              <i className="fas fa-percentage text-purple-500 text-xl"></i>
+              <i className="fas fa-money-bill-wave text-purple-500 text-xl"></i>
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-500">Occupancy Rate</p>
+              <p className="text-sm font-medium text-gray-500">Total Amount</p>
               <div className="flex items-baseline">
-                <h3 className="text-2xl font-bold text-gray-900">{occupancyRate}%</h3>
-                <span className="ml-2 text-xs font-medium text-green-600 bg-green-100 px-1.5 py-0.5 rounded-full">
-                  +5%
-                </span>
+                <h3 className="text-2xl font-bold text-gray-900">
+                  {typeof totalAmount === 'number' ? `${totalAmount.toLocaleString()} VND` : '0 VND'}
+                </h3>
               </div>
             </div>
           </div>
@@ -116,24 +159,26 @@ const DashboardOverview: React.FC = () => {
           </div>
         </Card>
         
-        {/* Pending Bookings Card */}
+        {/* Bookings Card */}
         <Card className="dashboard-card relative overflow-hidden border-none">
           <div className="absolute top-0 left-0 w-full h-1 bg-amber-500"></div>
           <div className="flex items-center">
             <div className="flex-shrink-0 h-12 w-12 rounded-lg bg-amber-100 flex items-center justify-center">
-              <i className="fas fa-clock text-amber-500 text-xl"></i>
+              <i className="fas fa-calendar-check text-amber-500 text-xl"></i>
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-500">Pending Bookings</p>
+              <p className="text-sm font-medium text-gray-500">Total Bookings</p>
               <div className="flex items-baseline">
-                <h3 className="text-2xl font-bold text-gray-900">{pendingBookings}</h3>
-                <span className="ml-2 text-sm text-gray-500">need attention</span>
+                <h3 className="text-2xl font-bold text-gray-900">{totalBookings}</h3>
+                <span className="ml-2 text-sm text-gray-500">
+                  {dashboardData.totalBookingCompleted} completed
+                </span>
               </div>
             </div>
           </div>
           <div className="mt-4">
             <a href="/bookings" className="text-sm text-amber-600 font-medium hover:text-amber-700 transition-colors flex items-center">
-              Review Requests
+              View Bookings
               <i className="fas fa-arrow-right ml-1"></i>
             </a>
           </div>
@@ -226,18 +271,18 @@ const DashboardOverview: React.FC = () => {
                 </div>
               </div>
               <p className="text-2xl font-bold text-gray-900 mt-2">{occupiedRooms}</p>
-              <p className="text-xs text-blue-600 mt-1">{Math.round((occupiedRooms / totalRooms) * 100)}% occupancy</p>
+              <p className="text-xs text-blue-600 mt-1">{occupancyRate}% occupancy</p>
             </div>
             
             <div className="p-4 bg-amber-50 rounded-xl hover:shadow-sm transition-shadow">
               <div className="flex justify-between items-center">
-                <p className="text-sm font-medium text-gray-600">Maintenance</p>
+                <p className="text-sm font-medium text-gray-600">Bookings</p>
                 <div className="rounded-full p-1.5 bg-amber-100">
-                  <i className="fas fa-tools text-amber-500 text-xs"></i>
+                  <i className="fas fa-calendar-alt text-amber-500 text-xs"></i>
                 </div>
               </div>
-              <p className="text-2xl font-bold text-gray-900 mt-2">{maintenanceRooms}</p>
-              <p className="text-xs text-amber-600 mt-1">Under repair</p>
+              <p className="text-2xl font-bold text-gray-900 mt-2">{totalBookings}</p>
+              <p className="text-xs text-amber-600 mt-1">Total bookings</p>
             </div>
             
             <div className="p-4 bg-red-50 rounded-xl hover:shadow-sm transition-shadow">
