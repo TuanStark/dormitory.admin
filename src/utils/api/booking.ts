@@ -49,13 +49,17 @@ export default async function fetchBookings(
       
       // Lấy token từ localStorage
       const token = localStorage.getItem('token');
+      console.log('token in fetchBookings', token);
       
       // Make the API call
       const response = await fetch(`http://localhost:8000/room-booking/all?${queryParams.toString()}`, {
         headers: {
+          'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         }
       });
+      const data = await response.json();
+      console.log('response in fetchBookings server  ', data);
       
       // Log response status để debug
 

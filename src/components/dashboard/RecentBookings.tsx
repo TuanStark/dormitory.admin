@@ -1,4 +1,3 @@
-import { BookingStatus, BookingStatusType } from '../../data/mockData.ts';
 import Card from '../ui/Card.tsx';
 import { useEffect, useState } from 'react';
 
@@ -129,24 +128,24 @@ const RecentBookings: React.FC = () => {
                         </div>
                       </div>
                     </td>
-                    <td className="px-4 py-3 whitespace-nowrap">
+                    <td className="px-4 py-3 whitespace-nowrap text-left">
                       <div className="text-sm text-gray-900">Room {booking.room.roomNumber}</div>
                       <div className="text-xs text-gray-500">{booking.room.price} VND/ngày</div>
                     </td>
-                    <td className="px-4 py-3 whitespace-nowrap">
+                    <td className="px-4 py-3 whitespace-nowrap text-left">
                       <div className="text-sm text-gray-900">{formatDate(booking.bookingDate)}</div>
                       <div className="text-xs text-gray-500">{booking.stayDuration} ngày</div>
                     </td>
-                    <td className="px-4 py-3 whitespace-nowrap">
+                    <td className="px-4 py-3 whitespace-nowrap text-left">
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusBadgeClass(booking.status)}`}>
                         {booking.status}
                       </span>
                     </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-right text-sm font-medium">
+                    {/* <td className="px-4 py-3 whitespace-nowrap text-right text-sm font-medium">
                       <button className="text-primary-600 hover:text-primary-900">
                         Details
                       </button>
-                    </td>
+                    </td> */}
                   </tr>
                 ))
               ) : (

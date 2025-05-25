@@ -1,129 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { useServerPagination } from '../hooks/useServerPagination';
 import Pagination from '../components/ui/Pagination';
 import Card from '../components/ui/Card';
 import { Link } from 'react-router-dom';
-import { Building, ApiResponse } from '../types';
+import { Building } from '../types';
 import BuildingFormModal from '../components/buildings/BuildingFormModal';
 import DeleteConfirmationModal from '../components/buildings/DeleteConfirmationModal';
 import defaultBuildingImage from '../assets/building/default_building.jpg';
-
-// Mock API function to simulate fetching buildings from server
-const fetchBuildings = async (
-  page: number, 
-  itemsPerPage: number, 
-  searchTerm?: string,
-  sortBy?: string,
-  capacity?: string
-): Promise<{
-  data: Building[];
-  totalItems: number;
-}> => {
-  try {
-    // Build the query string
-    const queryParams = new URLSearchParams({
-      page: page.toString(),
-      limit: itemsPerPage.toString()
-    });
-    
-    // Add search term if provided
-    if (searchTerm) {
-      queryParams.append('search', searchTerm);
-    }
-    
-    // Add sort parameter if provided
-    if (sortBy) {
-      queryParams.append('sort', sortBy);
-    }
-    
-    // Add capacity filter if provided
-    if (capacity) {
-      queryParams.append('capacity', capacity);
-    }
-    
-    // Make the API call
-    const response = await fetch(`http://localhost:8000/building?${queryParams.toString()}`);
-    const result = await response.json();
-    
-    if (result.statusCode === 200 && result.data) {
-      return {
-        data: result.data.data,
-        totalItems: result.data.pagination.total
-      };
-    } else {
-      throw new Error('Failed to fetch buildings');
-    }
-  } catch (error) {
-    console.error('Error fetching buildings:', error);
-    throw error;
-  }
-};
-
-// API function to add a new building
-const addBuilding = async (building: Partial<Building>): Promise<Building> => {
-  try {
-    const response = await fetch('http://localhost:8000/building', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(building),
-    });
-    
-    const result = await response.json();
-    
-    if (result.statusCode === 201 && result.data) {
-      return result.data;
-    } else {
-      throw new Error(result.message || 'Failed to add building');
-    }
-  } catch (error) {
-    console.error('Error adding building:', error);
-    throw error;
-  }
-};
-
-// API function to update a building
-const updateBuilding = async (id: number, building: Partial<Building>): Promise<Building> => {
-  try {
-    const response = await fetch(`http://localhost:8000/building/${id}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(building),
-    });
-    
-    const result = await response.json();
-    
-    if (result.statusCode === 200 && result.data) {
-      return result.data;
-    } else {
-      throw new Error(result.message || 'Failed to update building');
-    }
-  } catch (error) {
-    console.error('Error updating building:', error);
-    throw error;
-  }
-};
-
-// API function to delete a building
-const deleteBuilding = async (id: number): Promise<void> => {
-  try {
-    const response = await fetch(`http://localhost:8000/building/${id}`, {
-      method: 'DELETE',
-    });
-    
-    const result = await response.json();
-    
-    if (result.statusCode !== 200) {
-      throw new Error(result.message || 'Failed to delete building');
-    }
-  } catch (error) {
-    console.error('Error deleting building:', error);
-    throw error;
-  }
-};
+import useFecthApi from '../hooks/useFecthApi';
+import useQuery from '../hooks/useQuery';
+import useCreateApi from '../hooks/useCreateApi';
+import useUpdateApi from '../hooks/useUpdateApi';
+import useDeleteApi from '../hooks/useDeleteApi';
+import { toast } from 'react-toastify';
 
 // Debounce function
 const useDebounce = <T,>(value: T, delay: number): T => {
@@ -154,25 +42,23 @@ const Buildings: React.FC = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [selectedBuilding, setSelectedBuilding] = useState<Building | null>(null);
-  const [actionLoading, setActionLoading] = useState(false);
-  const [actionError, setActionError] = useState<string | null>(null);
-  const [actionSuccess, setActionSuccess] = useState<string | null>(null);
-  
-  // Use the server pagination hook
-  const {
-    items: buildings,
-    totalItems,
-    currentPage,
-    isLoading,
-    error,
-    goToPage,
-    refresh
-  } = useServerPagination<Building>({
-    fetchFn: (page, itemsPerPage) => fetchBuildings(page, itemsPerPage, debouncedSearchTerm, sortBy, filterByCapacity),
-    initialPage: 1,
-    itemsPerPage: 5,
-    dependencies: [debouncedSearchTerm, sortBy, filterByCapacity] // Re-fetch when filters change
+
+  // Khởi tạo query và lấy dữ liệu
+  const [query, updateQuery, resetQuery] = useQuery({
+    page: 1,
+    limit: 5,
+    sortBy: 'createAt',
+    sortOrder: 'desc',
+    search: debouncedSearchTerm,
+    status: '',
+    building: ''
   });
+
+  // Sử dụng các hooks API
+  const [buildings, meta, refetchBuildings] = useFecthApi('building', query, {});
+  const { createData, loading: createLoading, error: createError, success: createSuccess } = useCreateApi();
+  const { updateData, loading: updateLoading, error: updateError, success: updateSuccess } = useUpdateApi();
+  const { deleteData, loading: deleteLoading, error: deleteError, success: deleteSuccess } = useDeleteApi();
   
   // Set initial loading to false after first load
   useEffect(() => {
@@ -181,10 +67,31 @@ const Buildings: React.FC = () => {
     }
   }, [buildings.length]);
 
+  // Hiển thị thông báo lỗi và thành công
+  useEffect(() => {
+    if (createError) toast.error(`Lỗi khi thêm tòa nhà: ${createError}`);
+    if (updateError) toast.error(`Lỗi khi cập nhật tòa nhà: ${updateError}`);
+    if (deleteError) toast.error(`Lỗi khi xóa tòa nhà: ${deleteError}`);
+  }, [createError, updateError, deleteError]);
+
+  useEffect(() => {
+    if (createSuccess) {
+      toast.success('Thêm tòa nhà thành công');
+      refetchBuildings();
+    }
+    if (updateSuccess) {
+      toast.success('Cập nhật tòa nhà thành công');
+      refetchBuildings();
+    }
+    if (deleteSuccess) {
+      toast.success('Xóa tòa nhà thành công');
+      refetchBuildings();
+    }
+  }, [createSuccess, updateSuccess, deleteSuccess, refetchBuildings]);
+
   // Handle search
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    // The search will happen automatically due to the dependency on debouncedSearchTerm
   };
 
   // Handle search input change
@@ -213,42 +120,25 @@ const Buildings: React.FC = () => {
   const handleOpenAddModal = () => {
     setSelectedBuilding(null);
     setIsAddModalOpen(true);
-    setActionError(null);
   };
   
   // Open edit modal
   const handleOpenEditModal = (building: Building) => {
     setSelectedBuilding(building);
     setIsEditModalOpen(true);
-    setActionError(null);
   };
   
   // Open delete modal
   const handleOpenDeleteModal = (building: Building) => {
     setSelectedBuilding(building);
     setIsDeleteModalOpen(true);
-    setActionError(null);
   };
   
   // Handle add building
   const handleAddBuilding = async (buildingData: Partial<Building>) => {
-    setActionLoading(true);
-    setActionError(null);
-    
-    try {
-      await addBuilding(buildingData);
+    await createData('building', buildingData);
+    if (!createError) {
       setIsAddModalOpen(false);
-      setActionSuccess('Thêm tòa nhà thành công');
-      refresh(); // Refresh the list
-      
-      // Clear success message after 3 seconds
-      setTimeout(() => {
-        setActionSuccess(null);
-      }, 3000);
-    } catch (error) {
-      setActionError(error instanceof Error ? error.message : 'Có lỗi xảy ra khi thêm tòa nhà');
-    } finally {
-      setActionLoading(false);
     }
   };
   
@@ -256,23 +146,9 @@ const Buildings: React.FC = () => {
   const handleEditBuilding = async (buildingData: Partial<Building>) => {
     if (!selectedBuilding) return;
     
-    setActionLoading(true);
-    setActionError(null);
-    
-    try {
-      await updateBuilding(selectedBuilding.id, buildingData);
+    await updateData(`building/${selectedBuilding.id}`, buildingData);
+    if (!updateError) {
       setIsEditModalOpen(false);
-      setActionSuccess('Cập nhật tòa nhà thành công');
-      refresh(); // Refresh the list
-      
-      // Clear success message after 3 seconds
-      setTimeout(() => {
-        setActionSuccess(null);
-      }, 3000);
-    } catch (error) {
-      setActionError(error instanceof Error ? error.message : 'Có lỗi xảy ra khi cập nhật tòa nhà');
-    } finally {
-      setActionLoading(false);
     }
   };
   
@@ -280,24 +156,14 @@ const Buildings: React.FC = () => {
   const handleDeleteBuilding = async () => {
     if (!selectedBuilding) return;
     
-    setActionLoading(true);
-    setActionError(null);
-    
-    try {
-      await deleteBuilding(selectedBuilding.id);
+    await deleteData(`building`, selectedBuilding.id);
+    if (!deleteError) {
       setIsDeleteModalOpen(false);
-      setActionSuccess('Xóa tòa nhà thành công');
-      refresh(); // Refresh the list
-      
-      // Clear success message after 3 seconds
-      setTimeout(() => {
-        setActionSuccess(null);
-      }, 3000);
-    } catch (error) {
-      setActionError(error instanceof Error ? error.message : 'Có lỗi xảy ra khi xóa tòa nhà');
-    } finally {
-      setActionLoading(false);
     }
+  };
+
+  const goToPage = (page: number) => {
+    updateQuery({ ...query, page });
   };
   
   return (
@@ -312,14 +178,6 @@ const Buildings: React.FC = () => {
           Thêm tòa nhà
         </button>
       </div>
-      
-      {/* Success message */}
-      {actionSuccess && (
-        <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-md mb-6 flex items-center">
-          <i className="fas fa-check-circle mr-2"></i>
-          <span>{actionSuccess}</span>
-        </div>
-      )}
       
       {/* Search and filters */}
       <div className="bg-white p-4 rounded-lg shadow-sm mb-6">
@@ -457,29 +315,12 @@ const Buildings: React.FC = () => {
         </div>
       )}
       
-      {/* Error state */}
-      {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-6 py-4 rounded-md mb-6 flex items-start">
-          <i className="fas fa-exclamation-circle mt-1 mr-3"></i>
-          <div>
-            <h3 className="font-medium">Error loading buildings</h3>
-            <p className="text-sm">{error.message}</p>
-            <button 
-              onClick={refresh} 
-              className="mt-2 px-3 py-1 bg-red-100 text-red-800 text-sm rounded hover:bg-red-200 transition-colors"
-            >
-              Try Again
-            </button>
-          </div>
-        </div>
-      )}
-      
       {/* Buildings grid */}
-      {!error && (
+      {buildings && (
         <>
           {buildings.length > 0 ? (
             <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6`}>
-              {buildings.map(building => (
+              {buildings.map((building: Building) => (
                 <Card key={building.id} className="overflow-hidden hover:shadow-lg transition-shadow duration-300">
                   <div className="relative h-56">
                     <img 
@@ -568,7 +409,6 @@ const Buildings: React.FC = () => {
                 <button
                   onClick={() => {
                     setSearchTerm('');
-                    refresh();
                   }}
                   className="mt-4 px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300"
                 >
@@ -581,10 +421,10 @@ const Buildings: React.FC = () => {
           {/* Pagination */}
           <div className="mt-8 relative">
             <Pagination 
-              totalItems={totalItems}
-              currentPage={currentPage}
+              totalItems={meta.total}
+              currentPage={query.page}
               onPageChange={goToPage}
-              itemsPerPage={5}
+              itemsPerPage={query.limit}
             />
           </div>
         </>

@@ -56,7 +56,6 @@ const Rooms: React.FC = () => {
 
   const loadRooms = async (page = 1) => {
     const response = await fetchRooms(page, itemsPerPage, debouncedSearchTerm, sortBy, filterStatus, filterGender);
-    console.log(response);
     setRooms(response.data);
     setTotalItems(response.total);
     setCurrentPage(response.pageNumber);

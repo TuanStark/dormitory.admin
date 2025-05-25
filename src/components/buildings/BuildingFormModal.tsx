@@ -33,7 +33,7 @@ const BuildingFormModal: React.FC<BuildingFormModalProps> = ({
         name: building.name,
         description: building.description,
         address: building.address,
-        image: building.image,
+        image: building.image || '',
         floors: building.floors,
         latitude: building.latitude,
         longitude: building.longitude,
@@ -142,7 +142,7 @@ const BuildingFormModal: React.FC<BuildingFormModalProps> = ({
                   type="text"
                   id="image"
                   name="image"
-                  value={formData.image}
+                  value={formData.image || ''}
                   onChange={handleChange}
                   required
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"

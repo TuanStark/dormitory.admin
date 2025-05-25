@@ -1,24 +1,10 @@
-import { buildings, rooms, roomBookings, reports } from '../../data/mockData.ts';
-import { RoomStatus, BookingStatus, ReportStatus } from '../../data/mockData.ts';
+import { buildings, rooms, reports } from '../../data/mockData.ts';
+import { ReportStatus } from '../../data/mockData.ts';
+import formatCurrency from '../../utils/currentcy.ts';
 import Card from '../ui/Card.tsx';
 import { useEffect, useState } from 'react';
 // Stats cards for the dashboard
 const DashboardOverview: React.FC = () => {
-
-// totalAmount
-// : 
-// _sum
-// : 
-// {amount: null}
-// [[Prototype]]
-// : 
-// Object
-// totalAvailableRoom:74
-// totalBooking:2
-// totalBookingCompleted: 0
-// totalBuildings: 15
-// totalRooms : 75
-// totalUsers : 13
 
   const [dashboardData, setDashboardData] = useState({
     totalBuildings: 0,
@@ -29,7 +15,7 @@ const DashboardOverview: React.FC = () => {
     totalUsers: 0,
     totalAmount: {
       _sum: {
-        amount: null
+        totalAmount: null
       }
     }
   });
@@ -39,8 +25,8 @@ const DashboardOverview: React.FC = () => {
   const availableRooms = dashboardData.totalAvailableRoom;
   const occupiedRooms = dashboardData.totalBookingCompleted;
   const totalBookings = dashboardData.totalBooking;
-  const totalUsers = dashboardData.totalUsers;
-  const totalAmount = dashboardData.totalAmount._sum.amount || 0;
+  // const totalUsers = dashboardData.totalUsers;
+  const totalAmount = dashboardData.totalAmount._sum.totalAmount;
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -54,9 +40,7 @@ const DashboardOverview: React.FC = () => {
     };
     fetchDashboardData();
   }, []);
-  
   // These variables are used in the UI
-  const pendingBookings = roomBookings.filter(booking => booking.status === BookingStatus.PENDING).length;
   const unresolvedReports = reports.filter(report => report.status === ReportStatus.UNRESOLVED).length;
   
   // Calculate occupancy rate
@@ -84,10 +68,6 @@ const DashboardOverview: React.FC = () => {
             <i className="fas fa-download mr-2"></i>
             Export Report
           </button>
-          {/* <button className="btn btn-primary text-sm">
-            <i className="fas fa-plus mr-2"></i>
-            New Booking
-          </button> */}
         </div>
       </div>
       
@@ -147,7 +127,7 @@ const DashboardOverview: React.FC = () => {
               <p className="text-sm font-medium text-gray-500">Total Amount</p>
               <div className="flex items-baseline">
                 <h3 className="text-2xl font-bold text-gray-900">
-                  {typeof totalAmount === 'number' ? `${totalAmount.toLocaleString()} VND` : '0 VND'}
+                  {totalAmount ? formatCurrency(totalAmount) : '0 VND'}
                 </h3>
               </div>
             </div>
