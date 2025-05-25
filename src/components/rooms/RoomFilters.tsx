@@ -1,5 +1,7 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { RoomStatus, Gender } from '../../data/mockData';
+import useFecthApi from '../../hooks/useFecthApi';
+import { Building } from '../../types';
 
 interface RoomFiltersProps {
   searchTerm: string;
@@ -22,6 +24,17 @@ const RoomFilters: React.FC<RoomFiltersProps> = ({
   onGenderChange,
   onBuildingChange
 }) => {
+  const [buildings, setBuildings] = useState<Building[]>([]);
+  
+  // Lấy danh sách tòa nhà
+  const [buildingsList] = useFecthApi('building', { limit: 100 }, []);
+
+  useEffect(() => {
+    if (buildingsList && Array.isArray(buildingsList)) {
+      setBuildings(buildingsList);
+    }
+  }, [buildingsList]);
+
   return (
     <div className="bg-white p-4 rounded-lg shadow-md">
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -45,9 +58,9 @@ const RoomFilters: React.FC<RoomFiltersProps> = ({
         >
           <option value="">Tất cả trạng thái</option>
           <option value={RoomStatus.AVAILABLE}>Còn trống</option>
-          <option value={RoomStatus.OCCUPIED}>Đã thuê</option>
+          <option value="occupied">Đã thuê</option>
           <option value={RoomStatus.MAINTENANCE}>Bảo trì</option>
-          <option value={RoomStatus.RESERVED}>Đã đặt</option>
+          <option value="reserved">Đã đặt</option>
         </select>
         
         <select 
@@ -67,7 +80,11 @@ const RoomFilters: React.FC<RoomFiltersProps> = ({
           onChange={(e) => onBuildingChange(e.target.value)}
         >
           <option value="">Tất cả tòa nhà</option>
-          {/* Building options would be dynamically populated */}
+          {buildings.map(building => (
+            <option key={building.id} value={building.id}>
+              {building.name}
+            </option>
+          ))}
         </select>
       </div>
     </div>

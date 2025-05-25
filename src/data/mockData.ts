@@ -9,9 +9,8 @@ export type RoleType = typeof RoleTypes[keyof typeof RoleTypes];
 
 export const RoomStatus = {
   AVAILABLE: 'available',
-  OCCUPIED: 'occupied',
   MAINTENANCE: 'maintenance',
-  RESERVED: 'reserved',
+  FULL: 'full',
 } as const;
 
 export type RoomStatusType = typeof RoomStatus[keyof typeof RoomStatus];

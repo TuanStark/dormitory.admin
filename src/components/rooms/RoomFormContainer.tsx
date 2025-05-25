@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Room } from '../../types';
+import { Room, Building } from '../../types';
 import FormModal from '../ui/FormModal';
 import RoomForm from './RoomForm';
 
@@ -11,16 +11,18 @@ interface RoomFormData {
   gender: string;
   price: string;
   status: string;
+  buildingId?: number;
 }
 
 interface RoomFormContainerProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (roomData: RoomFormData & { buildingId?: string | number }) => void;
+  onSubmit: (roomData: RoomFormData & { buildingId?: number }) => void;
   room?: Room;
-  buildingId?: string | number;
+  buildingId?: number;
   title: string;
   isLoading?: boolean;
+  buildingOptions?: Building[];
 }
 
 const RoomFormContainer: React.FC<RoomFormContainerProps> = ({
@@ -30,7 +32,8 @@ const RoomFormContainer: React.FC<RoomFormContainerProps> = ({
   room,
   buildingId,
   title,
-  isLoading = false
+  isLoading = false,
+  buildingOptions = []
 }) => {
   const [formData, setFormData] = useState<RoomFormData>({
     roomNumber: '',
@@ -39,7 +42,8 @@ const RoomFormContainer: React.FC<RoomFormContainerProps> = ({
     capacity: 4,
     gender: 'Male',
     price: '400000',
-    status: 'available'
+    status: 'available',
+    buildingId: buildingId
   });
 
   useEffect(() => {
@@ -51,7 +55,8 @@ const RoomFormContainer: React.FC<RoomFormContainerProps> = ({
         capacity: room.capacity,
         gender: room.gender,
         price: room.price,
-        status: room.status
+        status: room.status,
+        buildingId: room.buildingId
       });
     } else {
       // Reset form for new room
@@ -62,10 +67,11 @@ const RoomFormContainer: React.FC<RoomFormContainerProps> = ({
         capacity: 4,
         gender: 'Male',
         price: '400000',
-        status: 'available'
+        status: 'available',
+        buildingId: buildingId
       });
     }
-  }, [room, isOpen]);
+  }, [room, buildingId, isOpen]);
 
   const handleChange = (field: string, value: string | number) => {
     setFormData(prev => ({
@@ -76,10 +82,7 @@ const RoomFormContainer: React.FC<RoomFormContainerProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit({
-      ...formData,
-      buildingId: buildingId
-    });
+    onSubmit(formData);
   };
 
   return (
@@ -95,6 +98,8 @@ const RoomFormContainer: React.FC<RoomFormContainerProps> = ({
         room={room}
         onChange={handleChange}
         formData={formData}
+        buildingOptions={buildingOptions}
+        selectedBuildingId={buildingId}
       />
     </FormModal>
   );

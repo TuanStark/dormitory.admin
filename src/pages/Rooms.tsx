@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import Button from '../components/ui/Button.tsx';
 import { Room } from '../types.ts';
-import fetchRooms from '../utils/api/room.ts';
 import Pagination from '../components/ui/Pagination.tsx';
 import RoomTable from '../components/rooms/RoomTable.tsx';
 import RoomFilters from '../components/rooms/RoomFilters.tsx';
@@ -9,6 +8,12 @@ import RoomViewModal from '../components/rooms/RoomViewModal.tsx';
 import RoomEditModal from '../components/rooms/RoomEditModal.tsx';
 import RoomDeleteModal from '../components/rooms/RoomDeleteModal.tsx';
 import RoomAddModal from '../components/rooms/RoomAddModal.tsx';
+import useQuery from '../hooks/useQuery';
+import useFecthApi from '../hooks/useFecthApi';
+import useCreateApi from '../hooks/useCreateApi';
+import useUpdateApi from '../hooks/useUpdateApi';
+import useDeleteApi from '../hooks/useDeleteApi';
+import { toast } from 'react-toastify';
 
 // Debounce function
 const useDebounce = <T,>(value: T, delay: number): T => {
@@ -28,18 +33,10 @@ const useDebounce = <T,>(value: T, delay: number): T => {
 };
 
 const Rooms: React.FC = () => {
-  const [rooms, setRooms] = useState<Room[]>([]);
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [genderFilter, setGenderFilter] = useState<string>('');
   const [buildingFilter, setBuildingFilter] = useState<string>('');
-  const [sortBy, setSortBy] = useState('id');
-  const [filterStatus, setFilterStatus] = useState('');
-  const [filterGender, setFilterGender] = useState('');
-  const [limit, setLimit] = useState(10);
-  const [totalItems, setTotalItems] = useState(0);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(5);
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
   
   // Modal states
@@ -49,23 +46,51 @@ const Rooms: React.FC = () => {
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
 
+  // Khởi tạo query và lấy dữ liệu
+  const [query, updateQuery, resetQuery] = useQuery({
+    page: 1,
+    limit: 5,
+    search: debouncedSearchTerm,
+    status: statusFilter,
+    gender: genderFilter,
+    building: buildingFilter
+  });
+
+  // Sử dụng các hooks API
+  const [rooms, meta, refetchRooms] = useFecthApi('room', query, {});
+  const { createData, loading: createLoading, error: createError, success: createSuccess } = useCreateApi();
+  const { updateData, loading: updateLoading, error: updateError, success: updateSuccess } = useUpdateApi();
+  const { deleteData, loading: deleteLoading, error: deleteError, success: deleteSuccess } = useDeleteApi();
+  
+  // Hiển thị thông báo lỗi và thành công
+  useEffect(() => {
+    if (createError) toast.error(`Lỗi khi thêm phòng: ${createError}`);
+    if (updateError) toast.error(`Lỗi khi cập nhật phòng: ${updateError}`);
+    if (deleteError) toast.error(`Lỗi khi xóa phòng: ${deleteError}`);
+  }, [createError, updateError, deleteError]);
+
+  useEffect(() => {
+    if (createSuccess) {
+      toast.success('Thêm phòng thành công');
+      refetchRooms();
+      setAddModalOpen(false);
+    }
+    if (updateSuccess) {
+      toast.success('Cập nhật phòng thành công');
+      refetchRooms();
+      setEditModalOpen(false);
+    }
+    if (deleteSuccess) {
+      toast.success('Xóa phòng thành công');
+      refetchRooms();
+      setDeleteModalOpen(false);
+    }
+  }, [createSuccess, updateSuccess, deleteSuccess, refetchRooms]);
+
   const goToPage = (page: number) => {
-    setCurrentPage(page);
-    loadRooms(page);
+    updateQuery({ ...query, page });
   };
 
-  const loadRooms = async (page = 1) => {
-    const response = await fetchRooms(page, itemsPerPage, debouncedSearchTerm, sortBy, filterStatus, filterGender);
-    setRooms(response.data);
-    setTotalItems(response.total);
-    setCurrentPage(response.pageNumber);
-    setItemsPerPage(response.limitNumber);
-  };
-  
-  useEffect(() => {
-    loadRooms();
-  }, [debouncedSearchTerm, sortBy, filterStatus, filterGender]);
-  
   // Handler functions for room actions
   const handleViewRoom = (room: Room) => {
     setSelectedRoom(room);
@@ -86,28 +111,46 @@ const Rooms: React.FC = () => {
     setAddModalOpen(true);
   };
 
-  const handleRoomAction = () => {
-    loadRooms(currentPage); // Reload rooms after any action
+  // Xử lý thêm phòng mới
+  const handleAddRoomSubmit = async (roomData: any) => {
+    await createData('room', roomData);
   };
-  
-  // Filter rooms based on search term and filters
-  const filteredRooms = rooms.filter(room => {
-    // Search filter
-    const matchesSearch = 
-      room.roomNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      room.description?.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    // Status filter
-    const matchesStatus = statusFilter === '' || room.status === statusFilter;
-    
-    // Gender filter
-    const matchesGender = genderFilter === '' || room.gender === genderFilter;
-    
-    // Building filter
-    const matchesBuilding = buildingFilter === '' || room.buildingId === parseInt(buildingFilter);
-    
-    return matchesSearch && matchesStatus && matchesGender && matchesBuilding;
-  });
+
+  // Xử lý cập nhật phòng
+  const handleEditRoomSubmit = async (roomData: any) => {
+    if (!selectedRoom) return;
+    await updateData(`room/${selectedRoom.id}`, roomData);
+  };
+
+  // Xử lý xóa phòng
+  const handleDeleteRoomSubmit = async () => {
+    if (!selectedRoom) return;
+    await deleteData('room', selectedRoom.id);
+  };
+
+  // Xử lý thay đổi bộ lọc
+  const handleStatusChange = (status: string) => {
+    setStatusFilter(status);
+    updateQuery({ status, page: 1 });
+  };
+
+  const handleGenderChange = (gender: string) => {
+    setGenderFilter(gender);
+    updateQuery({ gender, page: 1 });
+  };
+
+  const handleBuildingChange = (building: string) => {
+    setBuildingFilter(building);
+    updateQuery({ building, page: 1 });
+  };
+
+  const handleSearchChange = (term: string) => {
+    setSearchTerm(term);
+  };
+
+  useEffect(() => {
+    updateQuery({ search: debouncedSearchTerm, page: 1 });
+  }, [debouncedSearchTerm]);
 
   return (
     <div className="space-y-6">
@@ -128,15 +171,15 @@ const Rooms: React.FC = () => {
         statusFilter={statusFilter}
         genderFilter={genderFilter}
         buildingFilter={buildingFilter}
-        onSearchChange={setSearchTerm}
-        onStatusChange={setStatusFilter}
-        onGenderChange={setGenderFilter}
-        onBuildingChange={setBuildingFilter}
+        onSearchChange={handleSearchChange}
+        onStatusChange={handleStatusChange}
+        onGenderChange={handleGenderChange}
+        onBuildingChange={handleBuildingChange}
       />
       
       {/* Rooms Table */}
       <RoomTable
-        rooms={filteredRooms}
+        rooms={rooms}
         onViewRoom={handleViewRoom}
         onEditRoom={handleEditRoom}
         onDeleteRoom={handleDeleteRoom}
@@ -145,14 +188,14 @@ const Rooms: React.FC = () => {
       {/* Pagination */}
       <div className="flex justify-between items-center">
         <div className="text-sm text-gray-500">
-          Hiển thị <span className="font-medium">{filteredRooms.length}</span> trong số <span className="font-medium">{totalItems}</span> phòng
+          Hiển thị <span className="font-medium">{rooms.length}</span> trong số <span className="font-medium">{meta?.total || 0}</span> phòng
         </div>
         
         <Pagination 
-          totalItems={totalItems}
-          currentPage={currentPage}
+          totalItems={meta?.total || 0}
+          currentPage={meta?.pageNumber || query.page}
           onPageChange={goToPage}
-          itemsPerPage={itemsPerPage}
+          itemsPerPage={meta?.limitNumber || query.limit}
         />
       </div>
 
@@ -166,21 +209,22 @@ const Rooms: React.FC = () => {
       <RoomEditModal
         isOpen={editModalOpen}
         onClose={() => setEditModalOpen(false)}
-        onEditSuccess={handleRoomAction}
+        onEditSuccess={() => refetchRooms()}
         room={selectedRoom}
       />
 
       <RoomDeleteModal
         isOpen={deleteModalOpen}
         onClose={() => setDeleteModalOpen(false)}
-        onDeleteSuccess={handleRoomAction}
+        onDeleteSuccess={() => refetchRooms()}
         room={selectedRoom}
       />
 
       <RoomAddModal
         isOpen={addModalOpen}
         onClose={() => setAddModalOpen(false)}
-        onAddSuccess={handleRoomAction}
+        onAddSuccess={() => refetchRooms()}
+        buildingId={buildingFilter ? parseInt(buildingFilter) : undefined}
       />
     </div>
   );

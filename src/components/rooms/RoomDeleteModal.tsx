@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Room } from '../../types';
 import ConfirmationModal from '../ui/ConfirmationModal';
+import useDeleteApi from '../../hooks/useDeleteApi';
+import { toast } from 'react-toastify';
 
 interface RoomDeleteModalProps {
   isOpen: boolean;
@@ -15,32 +17,32 @@ const RoomDeleteModal: React.FC<RoomDeleteModalProps> = ({
   onDeleteSuccess,
   room
 }) => {
-  const [isLoading, setIsLoading] = useState(false);
+  const { deleteData, loading, error, success } = useDeleteApi();
 
   const handleConfirmDelete = async () => {
     if (!room) return;
     
-    setIsLoading(true);
-    try {
-      const response = await fetch(`http://localhost:8000/room/${room.id}`, {
-        method: 'DELETE'
-      });
-      
-      if (response.ok) {
-        alert('Xóa phòng thành công!');
-        onClose();
-        onDeleteSuccess();
-      } else {
-        const errorData = await response.json();
-        alert(`Lỗi: ${errorData.message || 'Không thể xóa phòng'}`);
-      }
-    } catch (error) {
-      console.error('Error deleting room:', error);
-      alert('Có lỗi xảy ra khi xóa phòng!');
-    } finally {
-      setIsLoading(false);
+    const result = await deleteData('room', room.id);
+    
+    if (result) {
+      onClose();
+      onDeleteSuccess();
     }
   };
+
+  // Hiển thị thông báo lỗi
+  React.useEffect(() => {
+    if (error) {
+      toast.error(`Lỗi: ${error}`);
+    }
+  }, [error]);
+
+  // Hiển thị thông báo thành công
+  React.useEffect(() => {
+    if (success) {
+      toast.success('Xóa phòng thành công!');
+    }
+  }, [success]);
 
   if (!room) return null;
 
@@ -54,7 +56,7 @@ const RoomDeleteModal: React.FC<RoomDeleteModalProps> = ({
       confirmText="Xóa"
       confirmVariant="danger"
       icon="fas fa-trash-alt"
-      isLoading={isLoading}
+      isLoading={loading}
     />
   );
 };

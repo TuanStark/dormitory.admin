@@ -36,6 +36,7 @@ const RoomTable: React.FC<RoomTableProps> = ({
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tòa nhà</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tầng</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sức chứa</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Còn Trống</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Giới tính</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Giá</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trạng thái</th>
@@ -46,34 +47,37 @@ const RoomTable: React.FC<RoomTableProps> = ({
             {rooms.map(room => (
               <tr key={room.id} className="hover:bg-gray-50">
                 <td className="px-6 py-4">
-                  <div className="text-sm font-medium text-gray-900">Phòng {room.roomNumber}</div>
-                  <div className="text-xs text-gray-500 truncate max-w-xs">{room.description}</div>
+                  <div className="text-sm font-medium text-gray-900 text-left">Phòng {room.roomNumber}</div>
+                  <div className="text-xs text-gray-500 truncate max-w-xs text-left">{room.description}</div>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-left">
                   Tòa nhà {room.buildingId}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-left">
                   {room.floor}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-left">
                   {room.capacity} {room.capacity > 1 ? 'người' : 'người'}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-left">
+                  {room.capacity - room.currentOccupants} chỗ
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-left">
                   <Badge variant="info">
                     {room.gender === Gender.MALE ? 'Nam' : 
                      room.gender === Gender.FEMALE ? 'Nữ' : 'Tất cả'}
                   </Badge>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-left">
                   {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(parseInt(room.price))}/tháng
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-left">
                   <Badge variant={room.status === RoomStatus.AVAILABLE ? 'success' : 
-                               room.status === RoomStatus.OCCUPIED ? 'info' :
-                               room.status === RoomStatus.MAINTENANCE ? 'warning' : 'secondary'}>
+                    room.status === RoomStatus.MAINTENANCE ? 'warning' : 'secondary'}>
                     {room.status === RoomStatus.AVAILABLE ? 'Còn trống' : 
-                     room.status === RoomStatus.OCCUPIED ? 'Đã thuê' :
-                     room.status === RoomStatus.MAINTENANCE ? 'Bảo trì' : 'Đã đặt'}
+                     room.status === RoomStatus.MAINTENANCE ? 'Bảo trì' : 
+                     room.status === RoomStatus.FULL   ? 'Hết chỗ' :
+                     'Đã đặt'}
                   </Badge>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">

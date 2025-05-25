@@ -1,5 +1,5 @@
 import React from 'react';
-import { Room } from '../../types';
+import { Room, Building } from '../../types';
 
 interface RoomFormProps {
   room?: Room;
@@ -12,21 +12,50 @@ interface RoomFormProps {
     gender: string;
     price: string;
     status: string;
+    buildingId?: number;
   };
+  buildingOptions?: Building[];
+  selectedBuildingId?: number;
 }
 
 const RoomForm: React.FC<RoomFormProps> = ({
   room,
   onChange,
-  formData
+  formData,
+  buildingOptions = [],
+  selectedBuildingId
 }) => {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    onChange(name, name === 'floor' || name === 'capacity' ? parseInt(value) : value);
+    onChange(name, name === 'floor' || name === 'capacity' || name === 'buildingId' ? parseInt(value) : value);
   };
 
   return (
     <div className="space-y-4">
+      {/* Building selection - only shown when adding a new room */}
+      {!room && buildingOptions && buildingOptions.length > 0 && (
+        <div>
+          <label htmlFor="buildingId" className="block text-sm font-medium text-gray-700 mb-1">
+            Tòa nhà <span className="text-red-500">*</span>
+          </label>
+          <select
+            id="buildingId"
+            name="buildingId"
+            value={formData.buildingId || selectedBuildingId || ''}
+            onChange={handleInputChange}
+            required
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+          >
+            <option value="">-- Chọn tòa nhà --</option>
+            {buildingOptions.map(building => (
+              <option key={building.id} value={building.id}>
+                {building.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Room Number */}
         <div>

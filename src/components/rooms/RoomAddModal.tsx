@@ -1,6 +1,9 @@
-import React, { useState } from 'react';
-import { Room } from '../../types';
+import React, { useState, useEffect } from 'react';
 import RoomFormContainer from './RoomFormContainer';
+import useCreateApi from '../../hooks/useCreateApi';
+import useFecthApi from '../../hooks/useFecthApi';
+import { toast } from 'react-toastify';
+import { Building } from '../../types';
 
 interface RoomAddModalProps {
   isOpen: boolean;
@@ -15,34 +18,47 @@ const RoomAddModal: React.FC<RoomAddModalProps> = ({
   onAddSuccess,
   buildingId
 }) => {
-  const [isLoading, setIsLoading] = useState(false);
+  const { createData, loading, error, success } = useCreateApi();
+  const [buildings, setBuildingList] = useState<Building[]>([]);
+  const [buildingsLoading, setBuildingsLoading] = useState(false);
+
+  // Lấy danh sách tòa nhà
+  const [buildingsList] = useFecthApi('building', { limit: 100 }, []);
+
+  useEffect(() => {
+    if (buildingsList && Array.isArray(buildingsList)) {
+      setBuildingList(buildingsList);
+    }
+  }, [buildingsList]);
 
   const handleAddRoom = async (roomData: any) => {
-    setIsLoading(true);
-    try {
-      const response = await fetch('http://localhost:8000/room', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(roomData)
-      });
-      
-      if (response.ok) {
-        alert('Thêm phòng thành công!');
-        onClose();
-        onAddSuccess();
-      } else {
-        const errorData = await response.json();
-        alert(`Lỗi: ${errorData.message || 'Không thể thêm phòng'}`);
-      }
-    } catch (error) {
-      console.error('Error adding room:', error);
-      alert('Có lỗi xảy ra khi thêm phòng!');
-    } finally {
-      setIsLoading(false);
+    // Kiểm tra xem đã chọn tòa nhà chưa
+    if (!roomData.buildingId && !buildingId) {
+      toast.error('Vui lòng chọn tòa nhà cho phòng');
+      return;
+    }
+
+    const result = await createData('room', roomData);
+    
+    if (result) {
+      onClose();
+      onAddSuccess();
     }
   };
+
+  // Hiển thị thông báo lỗi
+  React.useEffect(() => {
+    if (error) {
+      toast.error(`Lỗi: ${error}`);
+    }
+  }, [error]);
+
+  // Hiển thị thông báo thành công
+  React.useEffect(() => {
+    if (success) {
+      toast.success('Thêm phòng thành công!');
+    }
+  }, [success]);
 
   return (
     <RoomFormContainer
@@ -51,7 +67,8 @@ const RoomAddModal: React.FC<RoomAddModalProps> = ({
       onSubmit={handleAddRoom}
       buildingId={buildingId}
       title="Thêm phòng mới"
-      isLoading={isLoading}
+      isLoading={loading}
+      buildingOptions={buildings}
     />
   );
 };

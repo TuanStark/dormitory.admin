@@ -47,7 +47,7 @@ const Buildings: React.FC = () => {
   const [query, updateQuery, resetQuery] = useQuery({
     page: 1,
     limit: 5,
-    sortBy: 'createAt',
+    sortBy: sortBy,
     sortOrder: 'desc',
     search: debouncedSearchTerm,
     status: '',
