@@ -19,9 +19,9 @@ const navItems: NavItem[] = [
   { name: 'Rooms', path: '/rooms', icon: 'door-open' },
   { name: 'Bookings', path: '/bookings', icon: 'calendar-alt' },
   { name: 'Users', path: '/users', icon: 'users' },
-  { name: 'Reports', path: '/reports', icon: 'clipboard-list' },
-  { name: 'Reviews', path: '/reviews', icon: 'star' },
-  { name: 'Settings', path: '/settings', icon: 'cog' },
+  // { name: 'Reports', path: '/reports', icon: 'clipboard-list' },
+  // { name: 'Reviews', path: '/reviews', icon: 'star' },
+  // { name: 'Settings', path: '/settings', icon: 'cog' },
 ];
 
 const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
