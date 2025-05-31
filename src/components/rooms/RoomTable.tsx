@@ -16,7 +16,10 @@ const RoomTable: React.FC<RoomTableProps> = ({
   onEditRoom,
   onDeleteRoom
 }) => {
-  if (rooms.length === 0) {
+  // Filter out deleted rooms
+  const activeRooms = rooms.filter(room => room.deletedAt === null);
+  
+  if (activeRooms.length === 0) {
     return (
       <div className="text-center py-12 bg-gray-50 rounded-lg">
         <i className="fas fa-door-open text-gray-300 text-5xl"></i>
@@ -44,7 +47,7 @@ const RoomTable: React.FC<RoomTableProps> = ({
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {rooms.map(room => (
+            {activeRooms.map(room => (
               <tr key={room.id} className="hover:bg-gray-50">
                 <td className="px-6 py-4">
                   <div className="text-sm font-medium text-gray-900 text-left">Phòng {room.roomNumber}</div>

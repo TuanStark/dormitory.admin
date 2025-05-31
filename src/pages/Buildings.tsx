@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Pagination from '../components/ui/Pagination';
 import Card from '../components/ui/Card';
 import { Link } from 'react-router-dom';
@@ -156,7 +156,7 @@ const Buildings: React.FC = () => {
   const handleDeleteBuilding = async () => {
     if (!selectedBuilding) return;
     
-    await deleteData(`building`, selectedBuilding.id);
+    await updateData(`building/delete/${selectedBuilding.id}`,{status: false});
     if (!deleteError) {
       setIsDeleteModalOpen(false);
     }
@@ -165,6 +165,11 @@ const Buildings: React.FC = () => {
   const goToPage = (page: number) => {
     updateQuery({ ...query, page });
   };
+  
+  // Filter active buildings
+  const activeBuildings = useMemo(() => {
+    return buildings.filter((building: Building) => building.deletedAt === null);
+  }, [buildings]);
   
   return (
     <div className="container mx-auto px-4 py-8">
@@ -316,11 +321,11 @@ const Buildings: React.FC = () => {
       )}
       
       {/* Buildings grid */}
-      {buildings && (
+      {buildings && buildings.length > 0 && (
         <>
-          {buildings.length > 0 ? (
+          {activeBuildings.length > 0 ? (
             <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6`}>
-              {buildings.map((building: Building) => (
+              {activeBuildings.map((building: Building) => (
                 <Card key={building.id} className="overflow-hidden hover:shadow-lg transition-shadow duration-300">
                   <div className="relative h-56">
                     <img 

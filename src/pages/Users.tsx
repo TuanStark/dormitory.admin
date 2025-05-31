@@ -54,7 +54,6 @@ const Users = () => {
   const fetchUsersData = async (page = 1) => {
     try {
       const response = await fetchUsers(page, itemsPerPage, debouncedSearchTerm, sortBy, filterByCapacity);
-      //console.log(response);
       setUserData(response.data);
       setTotalItems(response.total);
       setCurrentPage(response.pageNumber);
@@ -189,7 +188,12 @@ const Users = () => {
     try {
       // API call to delete user
       const response = await fetch(`http://localhost:8000/users/${selectedUserId}`, {
-        method: 'DELETE',
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+        body: JSON.stringify({ status: false }),
       });
       
       const result = await response.json();
@@ -241,16 +245,6 @@ const Users = () => {
           </button>
         </div>
       )}
-
-      {/* <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-gray-900">Người dùng</h1>
-        <Button 
-          variant="primary"
-          icon="fas fa-user-plus"
-        >
-          Thêm người dùng
-        </Button>
-      </div> */}
       
       {/* Search and filters */}
       <Card>

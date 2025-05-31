@@ -111,22 +111,22 @@ const Rooms: React.FC = () => {
     setAddModalOpen(true);
   };
 
-  // Xử lý thêm phòng mới
-  const handleAddRoomSubmit = async (roomData: any) => {
-    await createData('room', roomData);
-  };
+  // // Xử lý thêm phòng mới
+  // const handleAddRoomSubmit = async (roomData: any) => {
+  //   await createData('room', roomData);
+  // };
 
-  // Xử lý cập nhật phòng
-  const handleEditRoomSubmit = async (roomData: any) => {
-    if (!selectedRoom) return;
-    await updateData(`room/${selectedRoom.id}`, roomData);
-  };
+  // // Xử lý cập nhật phòng
+  // const handleEditRoomSubmit = async (roomData: any) => {
+  //   if (!selectedRoom) return;
+  //   await updateData(`room/${selectedRoom.id}`, roomData);
+  // };
 
-  // Xử lý xóa phòng
-  const handleDeleteRoomSubmit = async () => {
-    if (!selectedRoom) return;
-    await deleteData('room', selectedRoom.id);
-  };
+  // // Xử lý xóa phòng
+  // const handleDeleteRoomSubmit = async () => {
+  //   if (!selectedRoom) return;
+  //   await deleteData('room', selectedRoom.id);
+  // };
 
   // Xử lý thay đổi bộ lọc
   const handleStatusChange = (status: string) => {

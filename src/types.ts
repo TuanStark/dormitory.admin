@@ -33,6 +33,7 @@ export interface Room {
   images: BuildingImage[];
   createAt?: string;
   updateAt?: string;
+  deletedAt?: string;
 }
 
 export interface Building {
@@ -52,6 +53,7 @@ export interface Building {
   oneStar: number;
   createAt?: string;
   updateAt?: string;
+  deletedAt?: string;
   rooms: Room[];
 }
 
@@ -80,6 +82,7 @@ export interface User {
   address?: string;
   createdAt: string;
   updatedAt: string;
+  deletedAt?: string;
 }
 
 export interface Role {

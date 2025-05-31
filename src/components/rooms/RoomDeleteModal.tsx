@@ -1,7 +1,7 @@
 import React from 'react';
 import { Room } from '../../types';
 import ConfirmationModal from '../ui/ConfirmationModal';
-import useDeleteApi from '../../hooks/useDeleteApi';
+import useUpdateApi from '../../hooks/useUpdateApi';
 import { toast } from 'react-toastify';
 
 interface RoomDeleteModalProps {
@@ -17,12 +17,12 @@ const RoomDeleteModal: React.FC<RoomDeleteModalProps> = ({
   onDeleteSuccess,
   room
 }) => {
-  const { deleteData, loading, error, success } = useDeleteApi();
+  const { updateData, loading, error, success } = useUpdateApi();
 
   const handleConfirmDelete = async () => {
     if (!room) return;
     
-    const result = await deleteData('room', room.id);
+    const result = await updateData(`/room/delete/${room.id}`,{status: false}  );
     
     if (result) {
       onClose();
