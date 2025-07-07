@@ -260,15 +260,6 @@ const Login = () => {
               </button>
             </div>
           </form>
-          
-          <div className="mt-8 text-center">
-            <p className="text-sm text-gray-600 mb-4">Thông tin đăng nhập demo:</p>
-            <div className="grid grid-cols-1 gap-2 text-xs text-gray-500">
-              <p>Admin: admin@example.com / password123</p>
-              <p>Manager: manager@example.com / password123</p>
-              <p>User: bob@example.com / password123</p>
-            </div>
-          </div>
         </div>
       </div>
     </div>

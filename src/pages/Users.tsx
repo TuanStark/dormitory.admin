@@ -117,8 +117,6 @@ const Users = () => {
   };
 
   const handleViewUser = (userId: number) => {
-    console.log(`Viewing user with ID: ${userId}`);
-    const selectedUser = userData.find(user => user.id === userId);
     setViewModalOpen(true);
     setSelectedUserId(userId);
   };
